@@ -1,0 +1,250 @@
+{
+  "language": "es",
+  "native_language": "en",
+  "version": 2,
+  "lessons": [
+    {
+      "id": "greetings-001",
+      "title": "Greetings & Introductions",
+      "level": "A1",
+      "estimated_minutes": 5,
+      "objective": "Greet someone, introduce yourself, and ask how they are doing.",
+      "vocabulary": [
+        {"es": "hola", "en": "hello", "phonetic": "OH-la"},
+        {"es": "buenos días", "en": "good morning", "phonetic": "BWEH-nos DEE-as"},
+        {"es": "buenas tardes", "en": "good afternoon", "phonetic": "BWEH-nas TAR-des"},
+        {"es": "buenas noches", "en": "good evening / good night", "phonetic": "BWEH-nas NOH-ches"},
+        {"es": "me llamo", "en": "my name is", "phonetic": "meh YAH-mo"},
+        {"es": "¿cómo te llamas?", "en": "what is your name?", "phonetic": "KOH-mo teh YAH-mas"},
+        {"es": "mucho gusto", "en": "nice to meet you", "phonetic": "MOO-cho GOOS-toh"},
+        {"es": "¿cómo estás?", "en": "how are you?", "phonetic": "KOH-mo es-TAHS"},
+        {"es": "bien", "en": "well / good", "phonetic": "bee-EN"},
+        {"es": "gracias", "en": "thank you", "phonetic": "GRAH-see-ahs"}
+      ],
+      "grammar_notes": [
+        "Spanish has two verbs for 'to be': **ser** (permanent) and **estar** (temporary state). For 'how are you', we use **estar** because mood is temporary.",
+        "**Llamo** literally means 'I call myself' — Spanish describes naming reflexively."
+      ],
+      "examples": [
+        {"es": "Hola, me llamo María.", "en": "Hello, my name is María."},
+        {"es": "Mucho gusto. ¿Cómo estás?", "en": "Nice to meet you. How are you?"},
+        {"es": "Bien, gracias. ¿Y tú?", "en": "Good, thanks. And you?"}
+      ],
+      "practice_prompts": [
+        "Say hello and introduce yourself with any name.",
+        "Ask me how I am doing.",
+        "Tell me you are doing well, and thank me."
+      ],
+      "checks": [
+        {"prompt_en": "How would you say 'Hello, my name is Alex'?", "expected_es": "Hola, me llamo Alex", "accept_variants": ["hola me llamo alex"]},
+        {"prompt_en": "How would you ask someone's name?", "expected_es": "¿Cómo te llamas?", "accept_variants": ["como te llamas", "cuál es tu nombre"]}
+      ]
+    },
+    {
+      "id": "numbers-001",
+      "title": "Numbers 1 to 20",
+      "level": "A1",
+      "estimated_minutes": 6,
+      "objective": "Count from 1 to 20 in Spanish and use numbers in simple phrases (age, quantity).",
+      "vocabulary": [
+        {"es": "uno", "en": "one", "phonetic": "OO-no"},
+        {"es": "dos", "en": "two", "phonetic": "dohs"},
+        {"es": "tres", "en": "three", "phonetic": "trehs"},
+        {"es": "cuatro", "en": "four", "phonetic": "KWAH-troh"},
+        {"es": "cinco", "en": "five", "phonetic": "SEEN-koh"},
+        {"es": "seis", "en": "six", "phonetic": "says"},
+        {"es": "siete", "en": "seven", "phonetic": "see-EH-teh"},
+        {"es": "ocho", "en": "eight", "phonetic": "OH-cho"},
+        {"es": "nueve", "en": "nine", "phonetic": "noo-EH-veh"},
+        {"es": "diez", "en": "ten", "phonetic": "dee-EHS"},
+        {"es": "once", "en": "eleven", "phonetic": "OHN-seh"},
+        {"es": "doce", "en": "twelve", "phonetic": "DOH-seh"},
+        {"es": "trece", "en": "thirteen", "phonetic": "TREH-seh"},
+        {"es": "catorce", "en": "fourteen", "phonetic": "kah-TOR-seh"},
+        {"es": "quince", "en": "fifteen", "phonetic": "KEEN-seh"},
+        {"es": "dieciséis", "en": "sixteen", "phonetic": "dee-eh-see-SAYS"},
+        {"es": "diecisiete", "en": "seventeen", "phonetic": "dee-eh-see-see-EH-teh"},
+        {"es": "dieciocho", "en": "eighteen", "phonetic": "dee-eh-see-OH-cho"},
+        {"es": "diecinueve", "en": "nineteen", "phonetic": "dee-eh-see-noo-EH-veh"},
+        {"es": "veinte", "en": "twenty", "phonetic": "BAYN-teh"}
+      ],
+      "grammar_notes": [
+        "Numbers 16–19 are formed as 'ten and six/seven/...' — *diez y seis* → *dieciséis*. They are written as one word.",
+        "For age, Spanish uses **tener** (to have), not **ser**: 'Tengo veinte años' = 'I have twenty years'."
+      ],
+      "examples": [
+        {"es": "Tengo diez años.", "en": "I am ten years old."},
+        {"es": "Quiero dos cafés, por favor.", "en": "I want two coffees, please."},
+        {"es": "Hay cinco personas.", "en": "There are five people."}
+      ],
+      "practice_prompts": [
+        "Count from one to five.",
+        "Tell me how old you are using 'tengo'.",
+        "Say 'I want three coffees'."
+      ],
+      "checks": [
+        {"prompt_en": "Translate: 'I want two coffees'", "expected_es": "Quiero dos cafés", "accept_variants": ["yo quiero dos cafes", "quiero dos cafés por favor"]},
+        {"prompt_en": "Count: five, ten, fifteen, twenty", "expected_es": "cinco diez quince veinte", "accept_variants": ["cinco, diez, quince, veinte"]}
+      ]
+    },
+    {
+      "id": "ordering-food-001",
+      "title": "Ordering Food at a Restaurant",
+      "level": "A2",
+      "estimated_minutes": 7,
+      "objective": "Order food and drinks politely, ask for the bill, and handle common waiter responses.",
+      "vocabulary": [
+        {"es": "la mesa", "en": "the table", "phonetic": "lah MEH-sah"},
+        {"es": "el menú", "en": "the menu", "phonetic": "el meh-NOO"},
+        {"es": "quisiera", "en": "I would like", "phonetic": "kee-see-EH-ra"},
+        {"es": "quiero", "en": "I want", "phonetic": "kee-EH-ro"},
+        {"es": "por favor", "en": "please", "phonetic": "por fa-VOR"},
+        {"es": "agua", "en": "water", "phonetic": "AH-gwah"},
+        {"es": "café", "en": "coffee", "phonetic": "kah-FEH"},
+        {"es": "la cuenta", "en": "the bill / check", "phonetic": "lah KWEN-tah"},
+        {"es": "delicioso", "en": "delicious", "phonetic": "deh-lee-see-OH-so"},
+        {"es": "una ensalada", "en": "a salad", "phonetic": "OO-nah en-sa-LAH-da"},
+        {"es": "el pollo", "en": "the chicken", "phonetic": "el POH-yoh"},
+        {"es": "el pescado", "en": "the fish", "phonetic": "el pes-KAH-do"}
+      ],
+      "grammar_notes": [
+        "**Quisiera** ('I would like') is more polite than **quiero** ('I want') — use it with waiters.",
+        "Definite articles **el / la / los / las** must agree with noun gender. *El pollo* (masc.), *la ensalada* (fem.).",
+        "To get the bill, the most natural phrase is *La cuenta, por favor* — no verb needed."
+      ],
+      "examples": [
+        {"es": "Quisiera un café, por favor.", "en": "I would like a coffee, please."},
+        {"es": "Para mí, el pollo con ensalada.", "en": "For me, the chicken with salad."},
+        {"es": "La cuenta, por favor.", "en": "The bill, please."}
+      ],
+      "practice_prompts": [
+        "Politely order water in Spanish.",
+        "Order the chicken with a salad.",
+        "Ask for the bill politely."
+      ],
+      "checks": [
+        {"prompt_en": "Politely order a coffee", "expected_es": "Quisiera un café, por favor", "accept_variants": ["quisiera un café", "quisiera un cafe por favor", "me gustaría un café"]},
+        {"prompt_en": "Ask for the bill politely", "expected_es": "La cuenta, por favor", "accept_variants": ["la cuenta por favor", "me trae la cuenta por favor"]}
+      ]
+    },
+    {
+      "id": "family-001",
+      "title": "Family Members",
+      "level": "A1",
+      "estimated_minutes": 6,
+      "objective": "Talk about your family — parents, siblings, and close relatives.",
+      "vocabulary": [
+        {"es": "la familia", "en": "the family", "phonetic": "lah fah-MEE-lee-ah"},
+        {"es": "el padre", "en": "the father", "phonetic": "el PAH-dreh"},
+        {"es": "la madre", "en": "the mother", "phonetic": "lah MAH-dreh"},
+        {"es": "el hermano", "en": "the brother", "phonetic": "el er-MAH-no"},
+        {"es": "la hermana", "en": "the sister", "phonetic": "lah er-MAH-na"},
+        {"es": "el hijo", "en": "the son", "phonetic": "el EE-ho"},
+        {"es": "la hija", "en": "the daughter", "phonetic": "lah EE-ha"},
+        {"es": "el abuelo", "en": "the grandfather", "phonetic": "el ah-BWEH-lo"},
+        {"es": "la abuela", "en": "the grandmother", "phonetic": "lah ah-BWEH-la"},
+        {"es": "tengo", "en": "I have", "phonetic": "TEN-go"},
+        {"es": "mi", "en": "my", "phonetic": "mee"}
+      ],
+      "grammar_notes": [
+        "Possessive **mi** doesn't change with gender: *mi padre*, *mi madre*, *mi hermano*, *mi hermana*.",
+        "To say 'I have a brother', Spanish uses **tener**: *Tengo un hermano*. Add a number for more: *Tengo dos hermanas*.",
+        "**Padres** (plural) means 'parents' — Spanish often uses the masculine plural for mixed-gender groups."
+      ],
+      "examples": [
+        {"es": "Tengo dos hermanos y una hermana.", "en": "I have two brothers and one sister."},
+        {"es": "Mi madre se llama Ana.", "en": "My mother's name is Ana."},
+        {"es": "Mis abuelos viven en Madrid.", "en": "My grandparents live in Madrid."}
+      ],
+      "practice_prompts": [
+        "Tell me about your siblings using 'tengo'.",
+        "Say 'my father is called' with any name.",
+        "Tell me how many people are in your family."
+      ],
+      "checks": [
+        {"prompt_en": "How do you say 'I have two sisters'?", "expected_es": "Tengo dos hermanas", "accept_variants": ["yo tengo dos hermanas"]},
+        {"prompt_en": "How do you say 'my mother'?", "expected_es": "mi madre", "accept_variants": ["mi mamá"]}
+      ]
+    },
+    {
+      "id": "days-time-001",
+      "title": "Days of the Week & Time",
+      "level": "A2",
+      "estimated_minutes": 7,
+      "objective": "Name the days of the week and tell time at the hour level.",
+      "vocabulary": [
+        {"es": "lunes", "en": "Monday", "phonetic": "LOO-nes"},
+        {"es": "martes", "en": "Tuesday", "phonetic": "MAR-tes"},
+        {"es": "miércoles", "en": "Wednesday", "phonetic": "mee-AIR-koh-les"},
+        {"es": "jueves", "en": "Thursday", "phonetic": "HWEH-bes"},
+        {"es": "viernes", "en": "Friday", "phonetic": "vee-AIR-nes"},
+        {"es": "sábado", "en": "Saturday", "phonetic": "SAH-bah-doh"},
+        {"es": "domingo", "en": "Sunday", "phonetic": "doh-MEEN-go"},
+        {"es": "hoy", "en": "today", "phonetic": "oy"},
+        {"es": "mañana", "en": "tomorrow / morning", "phonetic": "mah-NYAH-nah"},
+        {"es": "ayer", "en": "yesterday", "phonetic": "ah-YAIR"},
+        {"es": "es la una", "en": "it is one o'clock", "phonetic": "es lah OO-nah"},
+        {"es": "son las dos", "en": "it is two o'clock", "phonetic": "son lahs dohs"}
+      ],
+      "grammar_notes": [
+        "Days of the week are NOT capitalized in Spanish: *lunes*, *martes*, ...",
+        "Use **es** (it is) only for one o'clock: *Es la una*. Use **son** for all other hours: *Son las tres*.",
+        "**Mañana** has two meanings: 'tomorrow' (time) and 'morning' (part of day). Context disambiguates."
+      ],
+      "examples": [
+        {"es": "Hoy es lunes.", "en": "Today is Monday."},
+        {"es": "Mañana es martes.", "en": "Tomorrow is Tuesday."},
+        {"es": "Son las cinco de la tarde.", "en": "It is five in the afternoon."}
+      ],
+      "practice_prompts": [
+        "Tell me what day today is.",
+        "Say 'tomorrow is Friday'.",
+        "Say 'it is three o'clock'."
+      ],
+      "checks": [
+        {"prompt_en": "What is 'today is Wednesday'?", "expected_es": "Hoy es miércoles", "accept_variants": ["hoy es miercoles"]},
+        {"prompt_en": "How do you say 'it is one o'clock'?", "expected_es": "Es la una", "accept_variants": ["es la una en punto"]}
+      ]
+    },
+    {
+      "id": "directions-001",
+      "title": "Asking for Directions",
+      "level": "A2",
+      "estimated_minutes": 8,
+      "objective": "Ask where places are and understand basic directional answers.",
+      "vocabulary": [
+        {"es": "¿dónde está?", "en": "where is it?", "phonetic": "DOHN-deh es-TAH"},
+        {"es": "el baño", "en": "the bathroom", "phonetic": "el BAH-nyo"},
+        {"es": "el banco", "en": "the bank", "phonetic": "el BAHN-koh"},
+        {"es": "la estación", "en": "the station", "phonetic": "lah es-tah-see-OHN"},
+        {"es": "a la derecha", "en": "to the right", "phonetic": "ah lah deh-REH-cha"},
+        {"es": "a la izquierda", "en": "to the left", "phonetic": "ah lah ees-kee-AIR-da"},
+        {"es": "todo recto", "en": "straight ahead", "phonetic": "TOH-doh REHK-toh"},
+        {"es": "cerca", "en": "near / close", "phonetic": "SAIR-kah"},
+        {"es": "lejos", "en": "far", "phonetic": "LEH-hos"},
+        {"es": "perdón", "en": "excuse me / sorry", "phonetic": "pair-DOHN"},
+        {"es": "gire", "en": "turn (formal)", "phonetic": "HEE-reh"},
+        {"es": "siga", "en": "continue (formal)", "phonetic": "SEE-gah"}
+      ],
+      "grammar_notes": [
+        "Use **perdón** as a polite opener when stopping a stranger: *Perdón, ¿dónde está el baño?*",
+        "**Gire** and **siga** are formal commands (using *usted*). For *tú*: **gira** and **sigue**.",
+        "**Está** (estar) is for location: *El banco está cerca* (The bank is close). Never **es**."
+      ],
+      "examples": [
+        {"es": "Perdón, ¿dónde está el baño?", "en": "Excuse me, where is the bathroom?"},
+        {"es": "Siga todo recto y gire a la derecha.", "en": "Go straight ahead and turn right."},
+        {"es": "El banco está cerca, a la izquierda.", "en": "The bank is close, to the left."}
+      ],
+      "practice_prompts": [
+        "Politely ask where the bathroom is.",
+        "Tell me to turn left.",
+        "Say 'the station is far'."
+      ],
+      "checks": [
+        {"prompt_en": "Ask where the bank is", "expected_es": "¿Dónde está el banco?", "accept_variants": ["donde esta el banco", "perdón dónde está el banco"]},
+        {"prompt_en": "Say 'turn right'", "expected_es": "Gire a la derecha", "accept_variants": ["gira a la derecha", "doble a la derecha"]}
+      ]
+    }
+  ]
+}
