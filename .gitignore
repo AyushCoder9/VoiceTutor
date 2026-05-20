@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# Node
+node_modules/
+.next/
+out/
+dist/
+.turbo/
+*.tsbuildinfo
+.npm/
+
+# Env / secrets
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+
+# Data / runtime
+*.db
+*.sqlite
+*.sqlite3
+backend/data/*.db
+logs/
+*.log
+recordings/
+audio_dumps/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Tests
+coverage/
+.coverage.*
+
+# Misc
+tmp/
+.tmp/
