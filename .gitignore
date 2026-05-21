@@ -55,3 +55,9 @@ coverage/
 # Misc
 tmp/
 .tmp/
+
+# Excluded project docs and files
+GLOSSARY.md
+INTERVIEW_PREP.md
+kill.txt
+VIDEO_SCRIPT.md
