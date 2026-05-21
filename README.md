@@ -34,7 +34,7 @@
 
 ## 🎬 30-second demo
 
-> _Demo video link goes here after recording._
+> [**Demo Video (Google Drive)**](https://drive.google.com/drive/folders/1VpLzhM1W6FdSsT7iS8BHELZQLjcswCoV?usp=sharing)
 
 A learner says **"Teach me how to order food in Spanish"** → tutor walks them through *quisiera un café*, the learner interrupts with **"wait, why is it *la* and not *el*?"** → tutor explains in English, then resumes the lesson. At the end, the tutor says **"You have 3 words due for review tomorrow."**
 
@@ -153,7 +153,7 @@ Two columns: **what the spec asks for** → **what I shipped**. Every line of th
 |---|---|
 | Public GitHub repo + source + README + `.env.example` | ✅ `github.com/AyushCoder9/VoiceTutor` |
 | Working prototype runnable locally | ✅ `uvicorn` + `npm run dev` |
-| Demo video 3–5 min (lesson, quiz, doubt, code-switch, error recovery) | ✅ Script in `VIDEO_SCRIPT.md`; recorded separately |
+| Demo video 3–5 min (lesson, quiz, doubt, code-switch, error recovery) | ✅ [Google Drive Folder](https://drive.google.com/drive/folders/1VpLzhM1W6FdSsT7iS8BHELZQLjcswCoV?usp=sharing) |
 | Technical write-up (2–4 pages, MD/PDF) | ✅ `WRITEUP.md` |
 | Architecture diagram | ✅ 8 Mermaid diagrams in `docs/architecture.md` |
 | Evaluation harness (scripted convos / unit tests) | ✅ 151 tests incl. scripted-flow e2e |
