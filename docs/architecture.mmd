@@ -1,0 +1,78 @@
+%% VoiceTutor Architecture (Mermaid)
+%% Render: https://mermaid.live, GitHub (paste in fenced ```mermaid block), or:
+%%   npx -y @mermaid-js/mermaid-cli -i docs/architecture.mmd -o docs/architecture.svg
+
+flowchart TB
+  subgraph CLIENT["Browser Client · Next.js 14"]
+    direction TB
+    UI["Voice Orb · Transcript · Progress Panel"]
+    WSClient["WebSocket Client<br/>(Web Audio + AudioWorklet)"]
+    UI --> WSClient
+  end
+
+  subgraph SERVER["FastAPI Server · Python 3.11+"]
+    direction TB
+    WSServer["WebSocket Endpoint /ws"]
+
+    subgraph PIPE["Pipecat Pipeline"]
+      direction LR
+      VAD["Silero VAD"]
+      STT["AssemblyAI<br/>Universal-Streaming"]
+      Probe["Latency Probe"]
+      LLM["Groq<br/>Llama 3.3 70B"]
+      Tools["Intent Router<br/>+ 4 LLM tools"]
+      TTS["ElevenLabs<br/>Turbo v2.5"]
+
+      VAD --> STT --> Probe --> LLM
+      LLM --> Tools
+      Tools --> LLM
+      LLM --> TTS
+    end
+
+    WSServer --> VAD
+    TTS --> WSServer
+  end
+
+  subgraph AGENT["Agent Core"]
+    direction TB
+    FSM["Mode FSM<br/>Teach · Quiz · Convo · Doubt"]
+    Prompts["System Prompts<br/>(per mode + persona)"]
+    Grader["Two-tier Semantic Grader"]
+    Pron["Pronunciation Feedback"]
+    Curriculum["Curriculum<br/>6 Spanish lessons"]
+  end
+
+  subgraph MEM["Memory"]
+    direction TB
+    Short["Short-term<br/>in-mem SessionMemory"]
+    Long["Long-term<br/>SQLite + FSRS-lite"]
+  end
+
+  subgraph OBS["Observability"]
+    direction TB
+    Logger["Per-turn JSONL<br/>logs/turn_latency.jsonl"]
+    Metrics["Rolling P50/P95<br/>/metrics endpoint"]
+  end
+
+  WSClient <-->|"PCM16 audio · JSON events"| WSServer
+
+  Tools <--> FSM
+  Tools <--> Grader
+  Tools <--> Pron
+  Tools <--> Curriculum
+  Tools <--> Short
+  Tools <--> Long
+
+  LLM --> Prompts
+  Probe --> Logger
+  Probe --> Metrics
+
+  classDef ext   fill:#0ea5e9,stroke:#0369a1,color:#fff;
+  classDef ours  fill:#a78bfa,stroke:#6d28d9,color:#fff;
+  classDef store fill:#10b981,stroke:#047857,color:#fff;
+  classDef obs   fill:#f59e0b,stroke:#b45309,color:#fff;
+
+  class VAD,STT,LLM,TTS ext;
+  class FSM,Prompts,Grader,Pron,Curriculum,Tools,Probe ours;
+  class Short,Long store;
+  class Logger,Metrics obs;
