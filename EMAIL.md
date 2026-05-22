@@ -11,10 +11,8 @@ Hi <Hiring Contact First Name>,
 Here's my submission for the AI Engineer voice-agent take-home.
 
 **Repository:** https://github.com/AyushCoder9/VoiceTutor
-**Demo video:** <Loom / YouTube unlisted link>
+**Demo video:** https://drive.google.com/drive/folders/1VpLzhM1W6FdSsT7iS8BHELZQLjcswCoV?usp=sharing
 **Write-up:** [`WRITEUP.md`](https://github.com/AyushCoder9/VoiceTutor/blob/main/WRITEUP.md) (architecture, decision log, latency measurements)
-**Glossary:** [`GLOSSARY.md`](https://github.com/AyushCoder9/VoiceTutor/blob/main/GLOSSARY.md) (every acronym explained in plain English)
-**Interview prep:** [`INTERVIEW_PREP.md`](https://github.com/AyushCoder9/VoiceTutor/blob/main/INTERVIEW_PREP.md) (deep-dive in human voice)
 
 **One-paragraph summary.** VoiceTutor is a voice-first Spanish tutor on Pipecat. It supports all four required modes — Teaching, Quiz, Conversation, Doubt — entered via natural voice commands, with full-duplex audio, sub-1.5 s end-to-end latency (P50 ~880–1010 ms on my machine), real barge-in (<250 ms to silence), semantic answer grading that accepts paraphrases, code-switching-aware STT, persistent per-user progress in SQLite with FSRS-lite spaced repetition, multi-persona handoff (Teacher / Examiner / Companion), prosody-based engagement detection, and per-turn JSONL observability so you can answer "why did turn 14 take 2.3 s?" by reading one log line. Stack: Pipecat + Groq Llama 3.x + AssemblyAI Universal-Streaming + ElevenLabs Turbo v2.5 + Silero VAD, with a Next.js 14 minimal UI. 151 unit / integration / e2e tests pass. Six hand-authored lessons spanning A1 → A2. We hit 5 of 7 spec stretch goals (FSRS, pronunciation feedback, multi-persona, streaming evaluation, prosody engagement); we skipped telephony and on-device Whisper with documented rationale.
 
