@@ -20,6 +20,7 @@ from pipecat.frames.frames import (
     BotStoppedSpeakingFrame,
     CancelFrame,
     EndFrame,
+    ErrorFrame,
     Frame,
     InputAudioRawFrame,
     InterimTranscriptionFrame,
@@ -116,6 +117,8 @@ class JSONAudioSerializer(FrameSerializer):
             return json.dumps({"type": "interrupt"})
         if isinstance(frame, (EndFrame, CancelFrame)):
             return json.dumps({"type": "end"})
+        if isinstance(frame, ErrorFrame):
+            return json.dumps({"type": "error", "message": frame.error})
         return None
 
     async def deserialize(self, data: str | bytes) -> Frame | None:
