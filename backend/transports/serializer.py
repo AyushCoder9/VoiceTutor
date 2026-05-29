@@ -57,8 +57,12 @@ class JSONAudioSerializer(FrameSerializer):
         super().__init__()
         self._sr_in = sample_rate_in
         self._sr_out = sample_rate_out
+        self._audio_frames_out = 0
+        self._audio_bytes_out = 0
 
     async def setup(self, frame: StartFrame) -> None:
+        self._audio_frames_out = 0
+        self._audio_bytes_out = 0
         return
 
     async def serialize(self, frame: Frame) -> str | bytes | None:
@@ -66,7 +70,16 @@ class JSONAudioSerializer(FrameSerializer):
             # Direct JSON pass-through from TranscriptForwarder etc.
             return json.dumps(frame.message, ensure_ascii=False)
         if isinstance(frame, OutputAudioRawFrame):
-            return bytes(frame.audio)
+            audio_bytes = bytes(frame.audio)
+            self._audio_frames_out += 1
+            self._audio_bytes_out += len(audio_bytes)
+            if self._audio_frames_out <= 3 or self._audio_frames_out % 50 == 0:
+                from loguru import logger
+                logger.info(
+                    f"🔊 serializer: audio frame #{self._audio_frames_out}, "
+                    f"{len(audio_bytes)} bytes (total {self._audio_bytes_out} bytes sent)"
+                )
+            return audio_bytes
         if isinstance(frame, TranscriptionFrame):
             return json.dumps({
                 "type": "transcript",

@@ -101,7 +101,7 @@ class LanguageTutorBot:
         from pipecat.processors.audio.vad_processor import VADProcessor
         from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
         from pipecat.services.assemblyai.stt import AssemblyAISTTService
-        from pipecat.services.elevenlabs.tts import ElevenLabsTTSService
+        from pipecat.services.elevenlabs.tts import ElevenLabsHttpTTSService
         from pipecat.services.groq.llm import GroqLLMService
         from pipecat.services.groq.stt import GroqSTTService  # noqa: F401  (kept for fallback)
         from pipecat.transcriptions.language import Language
@@ -209,12 +209,15 @@ class LanguageTutorBot:
         tts_provider = os.environ.get("TTS_PROVIDER", "elevenlabs").lower()
 
         if tts_provider == "elevenlabs":
-            tts = ElevenLabsTTSService(
+            import aiohttp
+            session = aiohttp.ClientSession()
+            tts = ElevenLabsHttpTTSService(
                 api_key=os.environ["ELEVENLABS_API_KEY"],
+                aiohttp_session=session,
                 voice_id=os.environ.get("ELEVENLABS_VOICE_ID", "EXAVITQu4vr4xnSDxMaL"),
                 model=os.environ.get("ELEVENLABS_MODEL_ID", "eleven_turbo_v2_5"),
             )
-            logger.info(f"TTS: ElevenLabs Turbo · voice={os.environ.get('ELEVENLABS_VOICE_ID', 'default')}")
+            logger.info(f"TTS: ElevenLabs HTTP · voice={os.environ.get('ELEVENLABS_VOICE_ID', 'default')}")
 
         elif tts_provider == "deepgram":
             from pipecat.services.deepgram.tts import DeepgramTTSService
