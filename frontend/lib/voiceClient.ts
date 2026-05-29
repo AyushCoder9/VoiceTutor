@@ -75,6 +75,15 @@ export class VoiceClient {
   // Audio
   // ---------------------------------------------------------------------
   private async setupAudio() {
+    // CRITICAL: Create AudioContexts synchronously *before* awaiting the mic prompt,
+    // otherwise the browser's "user gesture" token expires and playback gets suspended.
+    this.audioCtx = new AudioContext();
+    this.playbackCtx = new AudioContext({ sampleRate: this.opts.sampleRateOut });
+    this.playbackGain = this.playbackCtx.createGain();
+    this.playbackGain.gain.value = 1.0;
+    this.playbackGain.connect(this.playbackCtx.destination);
+    this.playheadTime = this.playbackCtx.currentTime + 0.05;
+
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: {
         echoCancellation: true,
@@ -85,8 +94,6 @@ export class VoiceClient {
     });
     this.micStream = stream;
 
-    // Capture context — browser default sample rate (often 48kHz).
-    this.audioCtx = new AudioContext();
     await this.audioCtx.audioWorklet.addModule(workletURL());
     const src = this.audioCtx.createMediaStreamSource(stream);
     this.workletNode = new AudioWorkletNode(this.audioCtx, "pcm-downsampler", {
@@ -122,12 +129,7 @@ export class VoiceClient {
     src.connect(this.workletNode);
     // No destination — capture-only.
 
-    // Separate playback context at the server's output rate.
-    this.playbackCtx = new AudioContext({ sampleRate: this.opts.sampleRateOut });
-    this.playbackGain = this.playbackCtx.createGain();
-    this.playbackGain.gain.value = 1.0;
-    this.playbackGain.connect(this.playbackCtx.destination);
-    this.playheadTime = this.playbackCtx.currentTime + 0.05;
+    // (Moved to the top of setupAudio to ensure it runs synchronously with user gesture)
   }
 
   private async setupSocket() {
