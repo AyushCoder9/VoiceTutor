@@ -448,16 +448,18 @@ Plus a rolling window of P50/P95/P99 on `GET /metrics`, surfaced in the UI side-
 
 ## 🛠 Configuration
 
-All knobs are env vars (`backend/.env.example`). Highlights:
+All environment variables are in `.env` (see `backend/.env.example`). Highlights:
 
 | Var                          | Purpose                                                       |
 |------------------------------|---------------------------------------------------------------|
+| `TTS_PROVIDER`               | Sets active TTS (`elevenlabs` or `deepgram`)                  |
+| `DEEPGRAM_TTS_VOICE`         | `aura-2-carina-es` (native EN/ES code-switching capability)   |
 | `GROQ_MODEL`                 | LLM model id (default `llama-3.3-70b-versatile`)              |
 | `DEEPGRAM_STT_MODEL`         | STT model (default `nova-2-general`)                          |
-| `DEEPGRAM_LANGUAGE`          | `multi` for code-switching, or `en` / `es` for monolingual    |
 | `ELEVENLABS_MODEL_ID`        | `eleven_turbo_v2_5` for low-latency multilingual              |
 | `SQLITE_PATH`                | Database file path                                            |
-| `LATENCY_LOG_PATH`           | Per-turn JSONL output                                         |
+
+> **💡 Instant TTS Toggling (Render)**: To avoid tedious edits in the Render environment dashboard, `backend/bot.py` includes a `TTS_PROVIDER_OVERRIDE` string at the top of the TTS block. Change this directly in code (e.g. `"deepgram"` to `"elevenlabs"`) and `git push` for instant, reproducible toggling!
 
 ## 📜 License
 
