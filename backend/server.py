@@ -197,8 +197,17 @@ async def ws_endpoint(websocket: WebSocket) -> None:
         log().info("WebSocket disconnected")
     except Exception as e:
         log().exception(f"WS session crashed: {e}")
+        try:
+            import json
+            await websocket.send_text(json.dumps({
+                "type": "error",
+                "message": f"Backend pipeline crash: {type(e).__name__} - {str(e)}"
+            }))
+        except Exception:
+            pass
     finally:
         log().info("WS session ended")
+
 
 
 if __name__ == "__main__":
