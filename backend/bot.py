@@ -35,16 +35,15 @@ import os
 import time
 from typing import Any
 
+from .agent.orchestrator import ModeFSM
+from .agent.prompts import greeting_for_returning_user, system_prompt_for
+from .agent.prosody import ProsodyTracker
+from .agent.tools import ToolRunner
+from .memory.persistent import get_memory
+from .memory.session import SessionMemory
+from .observability.logger import TurnLog
+from .observability.metrics import METRICS
 from loguru import logger
-
-from backend.agent.orchestrator import ModeFSM
-from backend.agent.prompts import greeting_for_returning_user, system_prompt_for
-from backend.agent.prosody import ProsodyTracker
-from backend.agent.tools import ToolRunner, tools_schema_for_llm
-from backend.memory.persistent import get_memory
-from backend.memory.session import SessionMemory
-from backend.observability.logger import TurnLog
-from backend.observability.metrics import METRICS
 
 
 class LanguageTutorBot:
@@ -75,6 +74,7 @@ class LanguageTutorBot:
 
     # -------------------------------------------------------------------------
     async def run(self, transport: Any) -> None:
+        bot = self
         # Local imports keep pipecat optional at module import time (tests).
         from pipecat.audio.vad.silero import SileroVADAnalyzer
         from pipecat.audio.vad.vad_analyzer import VADParams
@@ -313,8 +313,7 @@ class LanguageTutorBot:
         # Listens to user transcripts and triggers mode transitions / tool
         # calls in Python — no LLM function calling required. Cleaner than
         # the previous tools-schema dance and much more reliable.
-        from backend.curriculum.loader import CURRICULUM as _CURRICULUM
-        bot_ref = self
+        from .curriculum.loader import CURRICULUM as _CURRICULUM
 
         class IntentRouter(FrameProcessor):
             INTENT_TEACH = ("teach", "lesson", "learn", "start lesson")
@@ -344,16 +343,16 @@ class LanguageTutorBot:
                 if isinstance(frame, TranscriptionFrame) and direction == FrameDirection.DOWNSTREAM:
                     self._route(frame.text or "")
                 if self._emit_state_pending:
-                    eng = bot_ref.prosody.reading()
+                    eng = bot.prosody.reading()
                     state_msg = {
                         "type": "state",
-                        "mode": bot_ref.session.mode,
-                        "persona": bot_ref.session.persona,
-                        "lesson_id": bot_ref.session.current_lesson_id,
-                        "lesson_step": bot_ref.session.lesson_step,
-                        "quiz_index": bot_ref.session.quiz_index,
-                        "quiz_total": bot_ref.session.quiz_total,
-                        "quiz_score": bot_ref.session.quiz_score,
+                        "mode": bot.session.mode,
+                        "persona": bot.session.persona,
+                        "lesson_id": bot.session.current_lesson_id,
+                        "lesson_step": bot.session.lesson_step,
+                        "quiz_index": bot.session.quiz_index,
+                        "quiz_total": bot.session.quiz_total,
+                        "quiz_score": bot.session.quiz_score,
                         "engagement_score": eng.score,
                         "engagement_label": eng.label,
                         "pace_wpm": eng.pace_wpm,
@@ -372,12 +371,12 @@ class LanguageTutorBot:
                 # ── Voice reset (2-step confirmation) ──────────────────
                 # If a destructive action is pending, this turn either
                 # confirms or cancels.
-                if bot_ref.session.pending_confirmation:
+                if bot.session.pending_confirmation:
                     if any(k in t for k in self.INTENT_CONFIRM_YES):
-                        action = bot_ref.session.pending_confirmation
-                        bot_ref.session.pending_confirmation = None
+                        action = bot.session.pending_confirmation
+                        bot.session.pending_confirmation = None
                         if action == "reset_all":
-                            res = bot_ref.memory.reset_user_progress(bot_ref.session.user_id)
+                            res = bot.memory.reset_user_progress(bot.session.user_id)
                             self._announce(
                                 f"Reset done. Cleared {res['progress']} lessons, "
                                 f"{res['vocab_mastery']} vocab entries, {res['mistakes']} mistakes. "
@@ -385,7 +384,7 @@ class LanguageTutorBot:
                             )
                             logger.info(f"🗑  voice reset_all → {res}")
                         elif action == "reset_weak_spots":
-                            res = bot_ref.memory.reset_weak_spots(bot_ref.session.user_id)
+                            res = bot.memory.reset_weak_spots(bot.session.user_id)
                             self._announce(
                                 f"Weak spots cleared: {res['vocab_mastery_reset']} vocab rows reset, "
                                 f"{res['mistakes_cleared']} mistakes removed. "
@@ -394,20 +393,20 @@ class LanguageTutorBot:
                             logger.info(f"🗑  voice reset_weak → {res}")
                         return
                     if any(k in t for k in self.INTENT_CONFIRM_NO):
-                        bot_ref.session.pending_confirmation = None
+                        bot.session.pending_confirmation = None
                         self._announce("Reset cancelled. One short reassurance, then ask what they'd like to do.")
                         return
                     # Anything else while waiting for confirmation: re-ask.
                     self._announce(
                         f"Still waiting for the learner to confirm "
-                        f"({bot_ref.session.pending_confirmation}). "
+                        f"({bot.session.pending_confirmation}). "
                         f"Ask 'say yes to confirm or no to cancel'."
                     )
                     return
 
                 # ── New reset request → ask for confirmation ───────────
                 if any(k in t for k in self.INTENT_RESET_ALL):
-                    bot_ref.session.pending_confirmation = "reset_all"
+                    bot.session.pending_confirmation = "reset_all"
                     self._announce(
                         "Learner asked to reset ALL progress. Confirm gravity in one sentence "
                         '(lessons + vocab + mistakes will be wiped), then ask: '
@@ -417,7 +416,7 @@ class LanguageTutorBot:
                     return
 
                 if any(k in t for k in self.INTENT_RESET_WEAK):
-                    bot_ref.session.pending_confirmation = "reset_weak_spots"
+                    bot.session.pending_confirmation = "reset_weak_spots"
                     self._announce(
                         "Learner asked to reset weak spots. Confirm: this will clear lapses + "
                         'recent mistakes but keep mastery. Ask: "say yes to confirm, or no to cancel."'
@@ -425,30 +424,30 @@ class LanguageTutorBot:
                     logger.info("⚠  reset_weak_spots requested — awaiting confirmation")
                     return
 
-                if any(k in t for k in self.INTENT_DOUBT) and bot_ref.session.mode != "doubt":
-                    bot_ref.fsm.switch_to("doubt")
+                if any(k in t for k in self.INTENT_DOUBT) and bot.session.mode != "doubt":
+                    bot.fsm.switch_to("doubt")
                     self._announce("Doubt mode. Answer in English, briefly, then ask if they want to continue.")
                     return
 
-                if any(k in t for k in self.INTENT_RESUME) and bot_ref.session.mode == "doubt":
-                    bot_ref.fsm.exit_doubt()
-                    self._announce(f"Resuming {bot_ref.session.mode} at step {bot_ref.session.lesson_step}.")
+                if any(k in t for k in self.INTENT_RESUME) and bot.session.mode == "doubt":
+                    bot.fsm.exit_doubt()
+                    self._announce(f"Resuming {bot.session.mode} at step {bot.session.lesson_step}.")
                     return
 
                 if any(k in t for k in self.INTENT_TEACH):
                     lesson = _CURRICULUM.by_topic(t) or _CURRICULUM.all()[0]
-                    bot_ref.fsm.switch_to("teaching")
-                    bot_ref.session.current_lesson_id = lesson.id
-                    bot_ref.session.lesson_step = "intro"
+                    bot.fsm.switch_to("teaching")
+                    bot.session.current_lesson_id = lesson.id
+                    bot.session.lesson_step = "intro"
                     # Seed FSRS with the lesson's vocab so Due-for-Review fills.
                     for v in lesson.vocabulary:
-                        bot_ref.session.introduce_vocab(v.es)
-                        bot_ref.memory.record_vocab_attempt(
-                            bot_ref.session.user_id, v.es, "es", success=True
+                        bot.session.introduce_vocab(v.es)
+                        bot.memory.record_vocab_attempt(
+                            bot.session.user_id, v.es, "es", success=True
                         )
                     # Mark lesson in progress (partial credit until quiz).
-                    bot_ref.memory.record_lesson_score(
-                        bot_ref.session.user_id, lesson.id, 0.3
+                    bot.memory.record_lesson_score(
+                        bot.session.user_id, lesson.id, 0.3
                     )
                     self._announce(self._teaching_step_note(lesson, "intro"))
                     logger.info(f"🎓 teaching → {lesson.id} (seeded {len(lesson.vocabulary)} vocab)")
@@ -456,11 +455,11 @@ class LanguageTutorBot:
 
                 if any(k in t for k in self.INTENT_QUIZ):
                     lesson = (_CURRICULUM.by_topic(t)
-                              or (_CURRICULUM.get(bot_ref.session.current_lesson_id)
-                                  if bot_ref.session.current_lesson_id else None)
+                              or (_CURRICULUM.get(bot.session.current_lesson_id)
+                                  if bot.session.current_lesson_id else None)
                               or _CURRICULUM.all()[0])
-                    bot_ref.fsm.switch_to("quiz")
-                    bot_ref.session.quiz_topic = lesson.id
+                    bot.fsm.switch_to("quiz")
+                    bot.session.quiz_topic = lesson.id
                     # Tight quiz: lesson checks first, then 3 vocab. 5 max.
                     qs = []
                     for c in lesson.checks:
@@ -471,10 +470,10 @@ class LanguageTutorBot:
                         qs.append({"prompt_en": f"How do you say '{v.en}' in Spanish?",
                                    "expected_es": v.es, "variants": []})
                     qs = qs[:5]
-                    bot_ref.session.quiz_questions = qs
-                    bot_ref.session.quiz_index = 0
-                    bot_ref.session.quiz_total = len(qs)
-                    bot_ref.session.quiz_score = 0
+                    bot.session.quiz_questions = qs
+                    bot.session.quiz_index = 0
+                    bot.session.quiz_total = len(qs)
+                    bot.session.quiz_score = 0
                     first = qs[0]
                     self._announce(
                         f"Quiz on {lesson.title} ({len(qs)} questions). Ask: \"{first['prompt_en']}\""
@@ -483,7 +482,7 @@ class LanguageTutorBot:
                     return
 
                 if any(k in t for k in self.INTENT_CONVO):
-                    bot_ref.fsm.switch_to("conversation")
+                    bot.fsm.switch_to("conversation")
                     self._announce("Conversation roleplay. Pick a simple scene from learner's request. Speak Spanish; only English to unstick.")
                     logger.info("💬 conversation")
                     return
@@ -494,24 +493,24 @@ class LanguageTutorBot:
                     return
 
                 # In quiz mode: grade deterministically (no LLM tokens used).
-                if bot_ref.session.mode == "quiz" and bot_ref.session.quiz_index < bot_ref.session.quiz_total:
+                if bot.session.mode == "quiz" and bot.session.quiz_index < bot.session.quiz_total:
                     self._grade_quiz_answer(text)
                     return
 
                 # In teaching mode: any user reply = advance one step + inject next-step note.
-                if bot_ref.session.mode == "teaching" and bot_ref.session.current_lesson_id:
-                    lesson = _CURRICULUM.get(bot_ref.session.current_lesson_id)
+                if bot.session.mode == "teaching" and bot.session.current_lesson_id:
+                    lesson = _CURRICULUM.get(bot.session.current_lesson_id)
                     if lesson:
-                        cur = bot_ref.session.lesson_step
+                        cur = bot.session.lesson_step
                         idx = self.LESSON_STEPS.index(cur) if cur in self.LESSON_STEPS else 0
                         if idx < len(self.LESSON_STEPS) - 1:
-                            bot_ref.session.lesson_step = self.LESSON_STEPS[idx + 1]
-                        new_step = bot_ref.session.lesson_step
+                            bot.session.lesson_step = self.LESSON_STEPS[idx + 1]
+                        new_step = bot.session.lesson_step
                         self._announce(self._teaching_step_note(lesson, new_step))
                         # Lesson completed via teaching path → record partial-mastery score.
                         if new_step == "done":
-                            bot_ref.memory.record_lesson_score(
-                                bot_ref.session.user_id, lesson.id, 0.6
+                            bot.memory.record_lesson_score(
+                                bot.session.user_id, lesson.id, 0.6
                             )
                             logger.info(f"✅ lesson {lesson.id} taught → score=0.6 (quiz can raise to 1.0)")
 
@@ -542,9 +541,9 @@ class LanguageTutorBot:
                 """Deterministic semantic grading; updates FSRS-lite + lesson progress;
                 injects feedback hint into LLM context. Now includes a
                 pronunciation-aware tip when the learner got it wrong."""
-                from backend.agent.grader import grade_deterministic
-                from backend.agent.pronunciation import detect_tricky
-                q = bot_ref.session.quiz_questions[bot_ref.session.quiz_index]
+                from .agent.grader import grade_deterministic
+                from .agent.pronunciation import detect_tricky
+                q = bot.session.quiz_questions[bot.session.quiz_index]
                 expected = q.get("expected_es", "")
                 variants = q.get("variants", [])
                 result = grade_deterministic(expected, learner_text, variants)
@@ -554,7 +553,7 @@ class LanguageTutorBot:
                 else:
                     correct = result.correct
                     if correct:
-                        bot_ref.session.quiz_score += 1
+                        bot.session.quiz_score += 1
                         note = f"Correct: \"{expected}\". One specific compliment."
                     else:
                         # Add pronunciation hint for the FIRST tricky word in expected.
@@ -567,52 +566,52 @@ class LanguageTutorBot:
                         note = f"Wrong. Expected \"{expected}\", learner said \"{learner_text}\".{pron_hint} One specific correction."
 
                 # ── FSRS-lite update so weak_spots / due_vocab panels reflect reality.
-                bot_ref.memory.record_vocab_attempt(
-                    bot_ref.session.user_id, expected, "es", success=correct
+                bot.memory.record_vocab_attempt(
+                    bot.session.user_id, expected, "es", success=correct
                 )
                 if not correct:
-                    bot_ref.memory.log_mistake(
-                        bot_ref.session.user_id, "quiz",
+                    bot.memory.log_mistake(
+                        bot.session.user_id, "quiz",
                         expected=expected, got=learner_text,
-                        lesson_id=bot_ref.session.quiz_topic,
+                        lesson_id=bot.session.quiz_topic,
                     )
 
                 # ── Lesson progress update on EVERY answer (not just last).
-                if bot_ref.session.quiz_total > 0:
-                    partial_score = bot_ref.session.quiz_score / bot_ref.session.quiz_total
-                    bot_ref.memory.record_lesson_score(
-                        bot_ref.session.user_id,
-                        bot_ref.session.quiz_topic or "unknown",
+                if bot.session.quiz_total > 0:
+                    partial_score = bot.session.quiz_score / bot.session.quiz_total
+                    bot.memory.record_lesson_score(
+                        bot.session.user_id,
+                        bot.session.quiz_topic or "unknown",
                         partial_score,
                     )
 
-                bot_ref.session.quiz_index += 1
-                if bot_ref.session.quiz_index >= bot_ref.session.quiz_total:
-                    score = bot_ref.session.quiz_score
-                    total = bot_ref.session.quiz_total
-                    bot_ref.fsm.switch_to("idle")
+                bot.session.quiz_index += 1
+                if bot.session.quiz_index >= bot.session.quiz_total:
+                    score = bot.session.quiz_score
+                    total = bot.session.quiz_total
+                    bot.fsm.switch_to("idle")
                     self._announce(f"{note} Then summary: \"You got {score}/{total}.\" Ask what next.")
                 else:
-                    next_q = bot_ref.session.quiz_questions[bot_ref.session.quiz_index]
+                    next_q = bot.session.quiz_questions[bot.session.quiz_index]
                     next_prompt = next_q.get("prompt_en") or next_q.get("prompt_es") or "Try another."
                     self._announce(f"{note} Then ask: \"{next_prompt}\".")
-                logger.info(f"📊 quiz {bot_ref.session.quiz_index}/{bot_ref.session.quiz_total} score={bot_ref.session.quiz_score} verdict={correct}")
+                logger.info(f"📊 quiz {bot.session.quiz_index}/{bot.session.quiz_total} score={bot.session.quiz_score} verdict={correct}")
 
             def _announce(self, note: str) -> None:
                 """Inject a system-role hint. Keep context small."""
                 # Append a tiny prosody nudge if engagement is low or high.
-                reading = bot_ref.prosody.reading()
+                reading = bot.prosody.reading()
                 tone = ""
                 if reading.is_low():
                     tone = " (Engagement low — slow down, encourage, simpler phrasing.)"
                 elif reading.is_high():
                     tone = " (Engagement high — feel free to add complexity.)"
 
-                msgs = bot_ref._llm_context.messages
+                msgs = bot._llm_context.messages
                 msgs.append({"role": "system", "content": note + tone})
                 # Hard cap: system prompt + last 6 messages = max 7.
                 if len(msgs) > 7:
-                    bot_ref._llm_context.messages[:] = [msgs[0]] + msgs[-6:]
+                    bot._llm_context.messages[:] = [msgs[0]] + msgs[-6:]
                 self._emit_state_pending = True
 
         intent_router = IntentRouter()
@@ -858,7 +857,6 @@ class LanguageTutorBot:
         task = PipelineTask(
             pipeline,
             params=PipelineParams(
-                allow_interruptions=True,    # barge-in
                 enable_metrics=True,
                 audio_in_sample_rate=16000,
                 audio_out_sample_rate=24000,
@@ -905,10 +903,16 @@ class LanguageTutorBot:
                     context_summary=self.session.context_summary(),
                 )
                 msgs = self._llm_context.messages
-                if msgs and msgs[0].get("role") == "system":
-                    msgs[0]["content"] = new_system
+                if msgs:
+                    first = msgs[0]
+                    if isinstance(first, dict) and first.get("role") == "system":
+                        first["content"] = new_system  # type: ignore
+                    elif hasattr(first, "message") and isinstance(getattr(first, "message", None), dict) and getattr(first, "message").get("role") == "system":  # noqa: B009 # type: ignore
+                        getattr(first, "message")["content"] = new_system  # noqa: B009 # type: ignore
+                    else:
+                        msgs.insert(0, {"role": "system", "content": new_system})  # type: ignore
                 else:
-                    msgs.insert(0, {"role": "system", "content": new_system})
+                    msgs.insert(0, {"role": "system", "content": new_system})  # type: ignore
 
             dt = time.time() * 1000 - t0
             keys = list(result.keys()) if isinstance(result, dict) else result
