@@ -84,6 +84,11 @@ export class VoiceClient {
     this.playbackGain.connect(this.playbackCtx.destination);
     this.playheadTime = this.playbackCtx.currentTime + 0.05;
 
+    // Force-resume both contexts immediately (browsers may still create them suspended).
+    if (this.audioCtx.state === "suspended") await this.audioCtx.resume();
+    if (this.playbackCtx.state === "suspended") await this.playbackCtx.resume();
+    console.log(`[voiceClient] 🔊 captureCtx.state=${this.audioCtx.state} playbackCtx.state=${this.playbackCtx.state} sampleRate=${this.playbackCtx.sampleRate}`);
+
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: {
         echoCancellation: true,
@@ -138,21 +143,38 @@ export class VoiceClient {
     ws.binaryType = "arraybuffer";
     this.ws = ws;
 
-    ws.onopen = () => {
+    let binaryMsgCount = 0;
+    let textMsgCount = 0;
+
+    ws.onopen = async () => {
       console.log("[voiceClient] WebSocket open →", this.opts.url);
+      // Safety-net: resume playback context when the socket opens (another user-interaction window).
+      if (this.playbackCtx && this.playbackCtx.state === "suspended") {
+        console.warn("[voiceClient] ⚠️ playbackCtx was suspended at WS open — resuming");
+        await this.playbackCtx.resume();
+      }
+      console.log(`[voiceClient] playbackCtx.state=${this.playbackCtx?.state}`);
       this.opts.onEvent({ type: "connection", status: "connected" });
     };
 
     ws.onmessage = (ev) => {
       if (typeof ev.data === "string") {
+        textMsgCount++;
         try {
           const msg = JSON.parse(ev.data) as VoiceEvent;
+          if (textMsgCount <= 5 || textMsgCount % 20 === 0) {
+            console.log(`[voiceClient] 📨 text #${textMsgCount}: type=${msg.type}`, msg);
+          }
           if (msg.type === "interrupt") this.flushPlayback();
           this.opts.onEvent(msg);
         } catch {
           /* ignore */
         }
       } else if (ev.data instanceof ArrayBuffer) {
+        binaryMsgCount++;
+        if (binaryMsgCount <= 3 || binaryMsgCount % 50 === 0) {
+          console.log(`[voiceClient] 🔈 audio chunk #${binaryMsgCount}: ${ev.data.byteLength} bytes, playbackCtx.state=${this.playbackCtx?.state}`);
+        }
         this.enqueueAudio(ev.data);
       }
     };
@@ -163,16 +185,32 @@ export class VoiceClient {
     };
 
     ws.onclose = (e) => {
-      console.log(`[voiceClient] WebSocket closed (code=${e.code} reason=${e.reason || "—"})`);
+      console.log(`[voiceClient] WebSocket closed (code=${e.code} reason=${e.reason || "—"}) — received ${binaryMsgCount} audio chunks, ${textMsgCount} text msgs`);
       this.alive = false;
       this.opts.onEvent({ type: "connection", status: "disconnected" });
     };
   }
 
+  private audioChunksQueued = 0;
+
   private enqueueAudio(buf: ArrayBuffer) {
-    if (!this.playbackCtx || !this.playbackGain) return;
+    if (!this.playbackCtx || !this.playbackGain) {
+      console.warn("[voiceClient] ❌ enqueueAudio called but playbackCtx or playbackGain is null");
+      return;
+    }
+
+    // Safety-net: if context got suspended mid-session, resume it.
+    if (this.playbackCtx.state === "suspended") {
+      console.warn("[voiceClient] ⚠️ playbackCtx suspended in enqueueAudio — resuming");
+      this.playbackCtx.resume();
+    }
+
     // Decode Int16 → Float32.
     const i16 = new Int16Array(buf);
+    if (i16.length === 0) {
+      console.warn("[voiceClient] ⚠️ received empty audio chunk");
+      return;
+    }
     const f32 = new Float32Array(i16.length);
     for (let i = 0; i < i16.length; i++) f32[i] = i16[i] / 0x8000;
 
@@ -180,11 +218,21 @@ export class VoiceClient {
     audioBuffer.copyToChannel(f32, 0);
     const node = this.playbackCtx.createBufferSource();
     node.buffer = audioBuffer;
-    node.connect(this.playbackGain);
+    node.connect(this.playbackGain!);
     const now = this.playbackCtx.currentTime;
     if (this.playheadTime < now) this.playheadTime = now + 0.02;
     node.start(this.playheadTime);
     this.playheadTime += audioBuffer.duration;
+    this.audioChunksQueued++;
+
+    if (this.audioChunksQueued <= 5 || this.audioChunksQueued % 100 === 0) {
+      console.log(
+        `[voiceClient] 🎵 queued chunk #${this.audioChunksQueued}: ` +
+        `${f32.length} samples, ${audioBuffer.duration.toFixed(3)}s, ` +
+        `playhead=${this.playheadTime.toFixed(3)}, ctxTime=${now.toFixed(3)}, ` +
+        `state=${this.playbackCtx.state}, gain=${this.playbackGain!.gain.value}`
+      );
+    }
   }
 
   private flushPlayback() {
