@@ -20,12 +20,12 @@ from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 
-from backend.bot import LanguageTutorBot
-from backend.curriculum.loader import CURRICULUM
-from backend.memory.persistent import get_memory
-from backend.observability.logger import init_logger, log
-from backend.observability.metrics import METRICS
-from backend.transports.websocket import build_transport
+from .bot import LanguageTutorBot
+from .curriculum.loader import CURRICULUM
+from .memory.persistent import get_memory
+from .observability.logger import init_logger, log
+from .observability.metrics import METRICS
+from .transports.websocket import build_transport
 
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
 init_logger(LOG_LEVEL)
