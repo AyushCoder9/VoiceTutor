@@ -210,8 +210,20 @@ async def ws_endpoint(websocket: WebSocket) -> None:
 
 
 
+from fastapi.responses import PlainTextResponse
+
+@app.get("/logs")
+async def get_logs():
+    """Debug endpoint to fetch the latest backend logs."""
+    try:
+        with open("backend_debug.log", "r") as f:
+            return PlainTextResponse(f.read()[-50000:])  # last 50KB
+    except Exception as e:
+        return PlainTextResponse(f"Error reading logs: {e}")
+
 if __name__ == "__main__":
     import uvicorn
+
 
     uvicorn.run(
         "backend.server:app",

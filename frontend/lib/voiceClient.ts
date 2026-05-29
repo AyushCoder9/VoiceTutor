@@ -157,18 +157,16 @@ export class VoiceClient {
       this.opts.onEvent({ type: "connection", status: "connected" });
     };
 
-    ws.onmessage = (ev) => {
+    ws.onmessage = async (ev) => {
       if (typeof ev.data === "string") {
         textMsgCount++;
         try {
           const msg = JSON.parse(ev.data) as VoiceEvent;
-          if (textMsgCount <= 5 || textMsgCount % 20 === 0) {
-            console.log(`[voiceClient] 📨 text #${textMsgCount}: type=${msg.type}`, msg);
-          }
+          console.log(`[voiceClient] 📨 text #${textMsgCount}: type=${msg.type}`, msg);
           if (msg.type === "interrupt") this.flushPlayback();
           this.opts.onEvent(msg);
-        } catch {
-          /* ignore */
+        } catch (err) {
+          console.warn("[voiceClient] ⚠️ failed to parse text message:", ev.data, err);
         }
       } else if (ev.data instanceof ArrayBuffer) {
         binaryMsgCount++;
@@ -176,6 +174,16 @@ export class VoiceClient {
           console.log(`[voiceClient] 🔈 audio chunk #${binaryMsgCount}: ${ev.data.byteLength} bytes, playbackCtx.state=${this.playbackCtx?.state}`);
         }
         this.enqueueAudio(ev.data);
+      } else if (ev.data instanceof Blob) {
+        // Some WebSocket proxies (Render/Cloudflare) may deliver binary as Blob
+        binaryMsgCount++;
+        const arrayBuf = await ev.data.arrayBuffer();
+        if (binaryMsgCount <= 3 || binaryMsgCount % 50 === 0) {
+          console.log(`[voiceClient] 🔈 audio chunk #${binaryMsgCount} (Blob→ArrayBuffer): ${arrayBuf.byteLength} bytes, playbackCtx.state=${this.playbackCtx?.state}`);
+        }
+        this.enqueueAudio(arrayBuf);
+      } else {
+        console.warn("[voiceClient] ❓ unknown message type:", typeof ev.data, ev.data);
       }
     };
 

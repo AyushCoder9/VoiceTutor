@@ -28,6 +28,12 @@ def init_logger(log_level: str = "INFO") -> None:
         format="<green>{time:HH:mm:ss.SSS}</green> | <level>{level: <7}</level> | "
         "<cyan>{module}</cyan>:<cyan>{line}</cyan> | {message}",
     )
+    _loguru.add(
+        "backend_debug.log",
+        level=log_level,
+        format="{time:HH:mm:ss.SSS} | {level: <7} | {module}:{line} | {message}",
+        rotation="10 MB"
+    )
 
 
 def log() -> Any:
