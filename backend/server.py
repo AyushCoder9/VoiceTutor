@@ -41,9 +41,14 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="VoiceTutor", version="0.1.0", lifespan=lifespan)
+
+# Parse ALLOWED_ORIGINS from environment, default to "*" if not set
+allowed_origins_env = os.environ.get("ALLOWED_ORIGINS", "*")
+origins = [origin.strip() for origin in allowed_origins_env.split(",")]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # demo only; lock down in prod
+    allow_origins=origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
