@@ -116,9 +116,9 @@ class LanguageTutorBot:
         vad_analyzer = SileroVADAnalyzer(
             sample_rate=16000,
             params=VADParams(
-                confidence=float(os.environ.get("VAD_CONFIDENCE", "0.75")),
-                min_volume=float(os.environ.get("VAD_MIN_VOLUME", "0.75")),
-                start_secs=float(os.environ.get("VAD_START_SECS", "0.25")),
+                confidence=float(os.environ.get("VAD_CONFIDENCE", "0.60")),
+                min_volume=float(os.environ.get("VAD_MIN_VOLUME", "0.55")),
+                start_secs=float(os.environ.get("VAD_START_SECS", "0.20")),
                 stop_secs=float(os.environ.get("VAD_STOP_SECS", "0.30")),
             ),
         )

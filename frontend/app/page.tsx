@@ -16,11 +16,12 @@ import StackSection from "@/components/StackSection";
 import Footer from "@/components/Footer";
 import { VoiceClient, type VoiceEvent } from "@/lib/voiceClient";
 
-type OrbState = "idle" | "listening" | "thinking" | "speaking";
+type OrbState = "idle" | "listening" | "thinking" | "speaking" | "connecting";
 type Mode = "idle" | "teaching" | "quiz" | "conversation" | "doubt";
 
 export default function Page() {
   const [connected, setConnected] = useState(false);
+  const [connecting, setConnecting] = useState(false);
   const [orb, setOrb] = useState<OrbState>("idle");
   const [mode, setMode] = useState<Mode>("idle");
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -47,11 +48,15 @@ export default function Page() {
   const onEvent = useCallback((e: VoiceEvent) => {
     switch (e.type) {
       case "connection":
-        if (e.status === "connected") { setConnected(true); setConnError(null); }
-        else if (e.status === "disconnected") {
-          setConnected(false); setOrb("idle");
+        if (e.status === "connected") {
+          setConnected(true); setConnecting(false); setConnError(null); setOrb("idle");
+        } else if (e.status === "disconnected") {
+          setConnected(false); setConnecting(false); setOrb("idle");
+        } else if (e.status === "error") {
+          const isReconnect = e.message?.startsWith("Reconnecting");
+          if (isReconnect) { setOrb("connecting"); setConnError(e.message || null); }
+          else { setConnError(e.message || "connection error"); }
         }
-        else if (e.status === "error") { setConnError(e.message || "connection error"); }
         break;
       case "mic_level":
         // 32768 = full-scale int16. ~3000 ≈ confident speech. Clamp to 0..1.
@@ -128,8 +133,14 @@ export default function Page() {
     if (connected) {
       await clientRef.current?.disconnect();
       clientRef.current = null;
+      setConnected(false);
+      setConnecting(false);
+      setOrb("idle");
       return;
     }
+    if (connecting) return; // already in flight
+    setConnecting(true);
+    setOrb("connecting");
     const c = new VoiceClient({ url: wsUrl, onEvent });
     clientRef.current = c;
     try {
@@ -137,8 +148,10 @@ export default function Page() {
     } catch (err: any) {
       console.error("connect failed", err);
       setConnected(false);
+      setConnecting(false);
+      setOrb("idle");
     }
-  }, [connected, wsUrl, onEvent]);
+  }, [connected, connecting, wsUrl, onEvent]);
 
   useEffect(() => () => { clientRef.current?.disconnect(); }, []);
 

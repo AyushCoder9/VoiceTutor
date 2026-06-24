@@ -41,6 +41,9 @@ export class VoiceClient {
   private outQueue: ArrayBuffer[] = [];
   private opts: Required<VoiceClientOptions>;
   private alive = false;
+  private reconnectAttempts = 0;
+  private readonly maxReconnects = 4;
+  private reconnecting = false;
 
   constructor(opts: VoiceClientOptions) {
     this.opts = {
@@ -58,6 +61,8 @@ export class VoiceClient {
 
   async disconnect(): Promise<void> {
     this.alive = false;
+    this.reconnecting = false;
+    this.reconnectAttempts = 0;
     try { this.ws?.close(); } catch {}
     this.ws = null;
     try { this.workletNode?.disconnect(); } catch {}
@@ -148,7 +153,8 @@ export class VoiceClient {
 
     ws.onopen = async () => {
       console.log("[voiceClient] WebSocket open →", this.opts.url);
-      // Safety-net: resume playback context when the socket opens (another user-interaction window).
+      this.reconnectAttempts = 0;
+      this.reconnecting = false;
       if (this.playbackCtx && this.playbackCtx.state === "suspended") {
         console.warn("[voiceClient] ⚠️ playbackCtx was suspended at WS open — resuming");
         await this.playbackCtx.resume();
@@ -163,6 +169,7 @@ export class VoiceClient {
         try {
           const msg = JSON.parse(ev.data) as VoiceEvent;
           console.log(`[voiceClient] 📨 text #${textMsgCount}: type=${msg.type}`, msg);
+          if ((msg as any).type === "ping") return; // server keepalive
           if (msg.type === "interrupt") this.flushPlayback();
           this.opts.onEvent(msg);
         } catch (err) {
@@ -192,9 +199,24 @@ export class VoiceClient {
       this.opts.onEvent({ type: "connection", status: "error", message: "WebSocket error" });
     };
 
-    ws.onclose = (e) => {
+    ws.onclose = async (e) => {
       console.log(`[voiceClient] WebSocket closed (code=${e.code} reason=${e.reason || "—"}) — received ${binaryMsgCount} audio chunks, ${textMsgCount} text msgs`);
       this.alive = false;
+      // Auto-reconnect on unexpected close (not on user-initiated disconnect).
+      if (!this.reconnecting && this.reconnectAttempts < this.maxReconnects && this.opts.url) {
+        this.reconnecting = true;
+        this.reconnectAttempts++;
+        const delay = Math.min(1000 * 2 ** (this.reconnectAttempts - 1), 8000);
+        console.log(`[voiceClient] reconnect attempt ${this.reconnectAttempts}/${this.maxReconnects} in ${delay}ms`);
+        this.opts.onEvent({ type: "connection", status: "error", message: `Reconnecting… (${this.reconnectAttempts}/${this.maxReconnects})` });
+        await new Promise(r => setTimeout(r, delay));
+        this.reconnecting = false;
+        if (this.opts.url) {
+          this.alive = true;
+          await this.setupSocket();
+          return;
+        }
+      }
       this.opts.onEvent({ type: "connection", status: "disconnected" });
     };
   }

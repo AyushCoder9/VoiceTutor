@@ -15,6 +15,9 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 from dotenv import load_dotenv
+import asyncio
+import json
+
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -33,9 +36,16 @@ init_logger(LOG_LEVEL)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    log().info("voicetutor server starting")
-    # Eagerly init the DB so the first WS connect doesn't pay schema init cost.
+    log().info("voicetutor server starting — pre-warming models...")
     get_memory()
+    try:
+        from pipecat.audio.vad.silero import SileroVADAnalyzer
+        from pipecat.audio.vad.vad_analyzer import VADParams
+        _vad = SileroVADAnalyzer(sample_rate=16000, params=VADParams())
+        log().info("SileroVAD pre-warmed OK")
+        del _vad
+    except Exception as e:
+        log().warning(f"VAD pre-warm failed (non-fatal): {e}")
     yield
     log().info("voicetutor server stopped")
 
@@ -189,6 +199,16 @@ async def health() -> dict[str, Any]:
 async def ws_endpoint(websocket: WebSocket) -> None:
     await websocket.accept()
     log().info("WebSocket accepted")
+
+    async def _ping_loop() -> None:
+        while True:
+            await asyncio.sleep(30)
+            try:
+                await websocket.send_text(json.dumps({"type": "ping"}))
+            except Exception:
+                break
+
+    ping_task = asyncio.create_task(_ping_loop())
     transport = build_transport(websocket)
     bot = LanguageTutorBot()
     try:
@@ -198,7 +218,6 @@ async def ws_endpoint(websocket: WebSocket) -> None:
     except Exception as e:
         log().exception(f"WS session crashed: {e}")
         try:
-            import json
             await websocket.send_text(json.dumps({
                 "type": "error",
                 "message": f"Backend pipeline crash: {type(e).__name__} - {str(e)}"
@@ -206,6 +225,7 @@ async def ws_endpoint(websocket: WebSocket) -> None:
         except Exception:
             pass
     finally:
+        ping_task.cancel()
         log().info("WS session ended")
 
 

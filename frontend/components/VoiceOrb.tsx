@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Mic, MicOff } from "lucide-react";
 
 type Props = {
-  state: "idle" | "listening" | "thinking" | "speaking";
+  state: "idle" | "listening" | "thinking" | "speaking" | "connecting";
   onToggle: () => void;
   connected: boolean;
 };
@@ -13,6 +13,7 @@ const COPY: Record<Props["state"], string> = {
   listening: "Listening…",
   thinking: "Thinking…",
   speaking: "Speaking…",
+  connecting: "Connecting…",
 };
 
 export default function VoiceOrb({ state, onToggle, connected }: Props) {
@@ -20,6 +21,7 @@ export default function VoiceOrb({ state, onToggle, connected }: Props) {
     state === "listening" ? "#34d399"
     : state === "speaking" ? "#a78bfa"
     : state === "thinking" ? "#ffb86b"
+    : state === "connecting" ? "#facc15"
     : "#38bdf8";
 
   return (
@@ -37,7 +39,7 @@ export default function VoiceOrb({ state, onToggle, connected }: Props) {
         aria-label={connected ? "Stop voice session" : "Start voice session"}
       >
         {/* outer pulsing rings */}
-        {(state === "listening" || state === "speaking") && (
+        {(state === "listening" || state === "speaking" || state === "connecting") && (
           <>
             <span className="pulse-ring" />
             <motion.span
