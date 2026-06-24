@@ -188,7 +188,7 @@ async def health() -> dict[str, Any]:
     except Exception as e:
         checks["sqlite"] = {"ok": False, "error": str(e)}
     # Env-key presence (not values)
-    for key in ("GROQ_API_KEY", "ASSEMBLYAI_API_KEY", "ELEVENLABS_API_KEY"):
+    for key in ("GROQ_API_KEY", "ASSEMBLYAI_API_KEY", "DEEPGRAM_API_KEY"):
         checks[key.lower()] = {"present": bool(os.environ.get(key))}
     return {"status": "ok" if all(c.get("ok", c.get("present", True)) for c in checks.values()) else "degraded",
             "checks": checks}

@@ -87,7 +87,7 @@ def test_health_endpoint_reports_dependencies(client):
     assert data["status"] in {"ok", "degraded"}
     assert "sqlite" in data["checks"]
     # Each api-key check must be present (regardless of value).
-    for key in ("groq_api_key", "assemblyai_api_key", "elevenlabs_api_key"):
+    for key in ("groq_api_key", "assemblyai_api_key", "deepgram_api_key"):
         assert key in data["checks"]
 
 

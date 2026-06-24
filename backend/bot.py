@@ -206,11 +206,7 @@ class LanguageTutorBot:
         # │   aura-2-sirio-es     Spanish male                               │
         # │   aura-asteria-en     English female                             │
         # └──────────────────────────────────────────────────────────────────┘
-        # HARDCODED TTS PROVIDER OVERRIDE (Change this directly in code for instant push-to-deploy!)
-        # Set to "elevenlabs" or "deepgram"
-        TTS_PROVIDER_OVERRIDE = "deepgram"
-
-        tts_provider = (TTS_PROVIDER_OVERRIDE or os.environ.get("TTS_PROVIDER", "elevenlabs")).lower()
+        tts_provider = os.environ.get("TTS_PROVIDER", "deepgram").lower()
 
         if tts_provider == "elevenlabs":
             import aiohttp

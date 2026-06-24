@@ -467,10 +467,9 @@ All environment variables are in `.env` (see `backend/.env.example`). Highlights
 | `DEEPGRAM_TTS_VOICE`         | `aura-2-carina-es` (native EN/ES code-switching capability)   |
 | `GROQ_MODEL`                 | LLM model id (default `llama-3.3-70b-versatile`)              |
 | `DEEPGRAM_STT_MODEL`         | STT model (default `nova-2-general`)                          |
-| `ELEVENLABS_MODEL_ID`        | `eleven_turbo_v2_5` for low-latency multilingual              |
 | `SQLITE_PATH`                | Database file path                                            |
 
-> **💡 Instant TTS Toggling (Render)**: To avoid tedious edits in the Render environment dashboard, `backend/bot.py` includes a `TTS_PROVIDER_OVERRIDE` string at the top of the TTS block. Change this directly in code (e.g. `"deepgram"` to `"elevenlabs"`) and `git push` for instant, reproducible toggling!
+> **💡 TTS Toggling**: Set `TTS_PROVIDER=elevenlabs` in Render env vars to switch from Deepgram Aura-2 to ElevenLabs (requires `ELEVENLABS_API_KEY`). Default is `deepgram`.
 
 ## 📜 License
 
