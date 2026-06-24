@@ -124,9 +124,9 @@ class LanguageTutorBot:
         )
         vad = VADProcessor(vad_analyzer=vad_analyzer)
         logger.info(
-            f"VAD: confidence={os.environ.get('VAD_CONFIDENCE', '0.75')} "
-            f"min_volume={os.environ.get('VAD_MIN_VOLUME', '0.75')} "
-            f"start={os.environ.get('VAD_START_SECS', '0.25')}s "
+            f"VAD: confidence={os.environ.get('VAD_CONFIDENCE', '0.60')} "
+            f"min_volume={os.environ.get('VAD_MIN_VOLUME', '0.55')} "
+            f"start={os.environ.get('VAD_START_SECS', '0.20')}s "
             f"stop={os.environ.get('VAD_STOP_SECS', '0.30')}s"
         )
 
@@ -324,20 +324,20 @@ class LanguageTutorBot:
         class EventForwarder(FrameProcessor):
             async def process_frame(self, frame: Frame, direction: FrameDirection) -> None:
                 await super().process_frame(frame, direction)
-                if direction != FrameDirection.DOWNSTREAM:
-                    await self.push_frame(frame, direction)
-                    return
                 msg: dict | None = None
+                # Bot speaking frames are pushed UPSTREAM by transport.output() —
+                # must intercept regardless of direction.
                 if isinstance(frame, BotStartedSpeakingFrame):
                     msg = {"type": "bot_speaking", "speaking": True}
                 elif isinstance(frame, BotStoppedSpeakingFrame):
                     msg = {"type": "bot_speaking", "speaking": False}
-                elif isinstance(frame, UserStartedSpeakingFrame):
-                    msg = {"type": "user_speaking", "speaking": True}
-                elif isinstance(frame, UserStoppedSpeakingFrame):
-                    msg = {"type": "user_speaking", "speaking": False}
-                elif isinstance(frame, LLMTextFrame) and frame.text:
-                    msg = {"type": "transcript", "role": "assistant", "interim": True, "text": frame.text}
+                elif direction == FrameDirection.DOWNSTREAM:
+                    if isinstance(frame, UserStartedSpeakingFrame):
+                        msg = {"type": "user_speaking", "speaking": True}
+                    elif isinstance(frame, UserStoppedSpeakingFrame):
+                        msg = {"type": "user_speaking", "speaking": False}
+                    elif isinstance(frame, LLMTextFrame) and frame.text:
+                        msg = {"type": "transcript", "role": "assistant", "interim": True, "text": frame.text}
                 if msg:
                     await self.push_frame(OutputTransportMessageFrame(message=msg), FrameDirection.DOWNSTREAM)
                 await self.push_frame(frame, direction)
