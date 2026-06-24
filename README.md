@@ -3,11 +3,11 @@
 # 🎙️ VoiceTutor
 ### A voice-first, hands-free Spanish tutor.
 
-**Pipecat** &nbsp;·&nbsp; **Groq Llama 3.3 70B** &nbsp;·&nbsp; **AssemblyAI Universal-Streaming** &nbsp;·&nbsp; **ElevenLabs Turbo v2.5** &nbsp;·&nbsp; **Silero VAD**
+**Pipecat** &nbsp;·&nbsp; **Groq Llama 3.3 70B** &nbsp;·&nbsp; **AssemblyAI Universal-Streaming** &nbsp;·&nbsp; **Deepgram Aura-2** &nbsp;·&nbsp; **Silero VAD**
 
 [![python](https://img.shields.io/badge/python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![next.js](https://img.shields.io/badge/Next.js-14-000000?style=flat-square&logo=nextdotjs)](https://nextjs.org/)
-[![pipecat](https://img.shields.io/badge/Pipecat-0.0.55+-9333EA?style=flat-square)](https://github.com/pipecat-ai/pipecat)
+[![pipecat](https://img.shields.io/badge/Pipecat-1.3.0-9333EA?style=flat-square)](https://github.com/pipecat-ai/pipecat)
 [![license](https://img.shields.io/badge/license-MIT-22C55E?style=flat-square)](LICENSE)
 [![latency](https://img.shields.io/badge/E2E_latency-%E2%89%A4_1010ms_P50-orange?style=flat-square)](#performance)
 [![tests](https://img.shields.io/badge/tests-151_passing-22C55E?style=flat-square)](#testing)
@@ -23,7 +23,7 @@
 ## ✨ Highlights
 
 - **Four learning modes**, all voice-entered: `Teaching`, `Quiz`, `Conversation`, `Doubt`
-- **Sub-second response.** Groq LLM + ElevenLabs Turbo + tuned Silero VAD = ~1.0 s P50 end-to-end
+- **Sub-second response.** Groq LLM + Deepgram Aura-2 TTS + tuned Silero VAD = ~1.0 s P50 end-to-end
 - **Real barge-in.** Speak over the agent and it stops in <250 ms
 - **Semantic grading.** Paraphrases are accepted (`"I'd like coffee"` ≡ `"I would like a coffee, please"`)
 - **Per-user persistence** with **FSRS-lite spaced repetition** so weak words come back tomorrow
@@ -64,13 +64,13 @@ Two columns: **what the spec asks for** → **what I shipped**. Every line of th
 |---|---|
 | Real-time full-duplex audio | ✅ WebSocket carries PCM in + out |
 | Streaming STT (input) | ✅ AssemblyAI Universal-Streaming v3 |
-| Streaming TTS (output) | ✅ ElevenLabs Turbo v2.5 WS streaming |
+| Streaming TTS (output) | ✅ Deepgram Aura-2 streaming (`aura-2-carina-es`) |
 | Barge-in / interruption | ✅ Silero VAD → `InterruptionFrame` → TTS cancel |
 | Voice Activity Detection (VAD) | ✅ Silero, tuned thresholds |
 | E2E latency < 1.5 s (P50) | ✅ Measured ~880–1010 ms |
 | Latency documented | ✅ Per-stage table in WRITEUP § 4 + `/metrics` |
 | Graceful silence handling | ✅ VAD only fires above thresholds |
-| Background noise handling | ✅ `min_volume=0.75` + `confidence=0.75` reject AC / keyboard |
+| Background noise handling | ✅ `min_volume=0.55` + `confidence=0.60` reject AC / keyboard while catching browser mics |
 | Disfluency handling ("um", restarts) | ✅ Silero ignores, AssemblyAI tolerates |
 
 ### Teaching & pedagogy (§ 4.2)
@@ -109,8 +109,8 @@ Two columns: **what the spec asks for** → **what I shipped**. Every line of th
 | STT transcribes target language | ✅ AssemblyAI `language=Language.ES` |
 | STT transcribes native language too | ✅ EN code-switching tolerated within ES mode |
 | Same-utterance code-switching | ✅ Language tag carried per frame |
-| TTS native-sounding in both | ✅ ElevenLabs Turbo v2.5 multilingual |
-| Voice switching natural (no swap mid-sentence) | ✅ Single voice ID handles both — zero artifact |
+| TTS native-sounding in both | ✅ Deepgram Aura-2 `aura-2-carina-es` (native EN/ES code-switching) |
+| Voice switching natural (no swap mid-sentence) | ✅ Single voice handles both — zero artifact |
 | Code-switching handling documented | ✅ WRITEUP § 8 |
 
 ### Technical stack (§ 5.1)
@@ -119,7 +119,7 @@ Two columns: **what the spec asks for** → **what I shipped**. Every line of th
 | Orchestration: Pipecat OR LiveKit | ✅ Pipecat (defended in WRITEUP D1) |
 | LLM with function/tool calling | ✅ Groq Llama 3.x + 4 tools |
 | STT must be streaming, justified | ✅ AssemblyAI Universal-Streaming v3 (WRITEUP D4) |
-| TTS supports target lang + streams | ✅ ElevenLabs Turbo v2.5 |
+| TTS supports target lang + streams | ✅ Deepgram Aura-2 (`aura-2-carina-es`) |
 | VAD (Silero or pipeline-native) | ✅ Silero |
 | Frontend (anything minimal) | ✅ Next.js 14, single page |
 | Persistence (SQLite / Postgres / Redis / JSON) | ✅ SQLite WAL |
@@ -212,7 +212,7 @@ flowchart TB
       Probe["Latency Probe"]
       LLM["Groq<br/>Llama 3.3 70B"]
       Tools["Intent Router<br/>+ 4 LLM tools"]
-      TTS["ElevenLabs<br/>Turbo v2.5"]
+      TTS["Deepgram<br/>Aura-2"]
 
       VAD --> STT --> Probe --> LLM
       LLM --> Tools
@@ -279,12 +279,23 @@ End-to-end voice latency measured per turn and written to `logs/turn_latency.jso
 | Silero VAD end-of-speech             | ~200 ms | `stop_secs=0.4`                                    |
 | AssemblyAI STT finalize              | ~150 ms | Universal-Streaming WebSocket                      |
 | Groq LLM TTFT (Llama 3.3 70B)        | ~250 ms | ~300 tokens/s on Groq LPU                          |
-| ElevenLabs Turbo v2.5 first audio    | ~350 ms | WebSocket streaming                                |
+| Deepgram Aura-2 first audio           | ~300 ms | Streaming TTS                                      |
 | Network + buffer                     | ~80 ms  | localhost                                          |
 | **Total P50**                        | **~1010 ms** | **< 1500 ms target ✅**                       |
 | Interrupt-to-silence                 | <250 ms | Target was 300 ms                                  |
 
 Live metrics: `GET /metrics`.
+
+## 🌐 Live Demo
+
+| Service | URL |
+|---------|-----|
+| Frontend (Vercel) | https://voicetutor-six.vercel.app |
+| Backend API (Render) | https://voicetutor-backend.onrender.com |
+| Health check | https://voicetutor-backend.onrender.com/health |
+| Metrics | https://voicetutor-backend.onrender.com/metrics |
+
+> **Note:** Render free tier spins down after 15 min idle. First connect after inactivity may take ~15 s. Set up an [UptimeRobot](https://uptimerobot.com) HTTP monitor on `/health` (5-min interval, free) to keep it warm.
 
 ## 🚀 Quickstart
 
@@ -294,7 +305,7 @@ Live metrics: `GET /metrics`.
 - API keys (all have free tiers, no card required):
   - **Groq** — https://console.groq.com/keys
   - **AssemblyAI** — https://www.assemblyai.com/dashboard/signup ($50 free credit)
-  - **ElevenLabs** — https://elevenlabs.io/app/settings/api-keys
+  - **Deepgram** — https://console.deepgram.com/ ($200 free credit)
 
 ### 1. Backend
 

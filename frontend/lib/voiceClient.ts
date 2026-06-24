@@ -176,6 +176,17 @@ export class VoiceClient {
           console.warn("[voiceClient] ⚠️ failed to parse text message:", ev.data, err);
         }
       } else if (ev.data instanceof ArrayBuffer) {
+        // Pipecat 1.x sends ALL frames (including JSON events) as binary.
+        // Try to parse as UTF-8 JSON first; only treat as audio if that fails.
+        const maybeJson = tryParseJsonBinary(ev.data);
+        if (maybeJson !== null) {
+          textMsgCount++;
+          console.log(`[voiceClient] 📨 binary-JSON #${textMsgCount}: type=${maybeJson.type}`, maybeJson);
+          if ((maybeJson as any).type === "ping") return;
+          if (maybeJson.type === "interrupt") this.flushPlayback();
+          this.opts.onEvent(maybeJson);
+          return;
+        }
         binaryMsgCount++;
         if (binaryMsgCount <= 3 || binaryMsgCount % 50 === 0) {
           console.log(`[voiceClient] 🔈 audio chunk #${binaryMsgCount}: ${ev.data.byteLength} bytes, playbackCtx.state=${this.playbackCtx?.state}`);
@@ -183,8 +194,17 @@ export class VoiceClient {
         this.enqueueAudio(ev.data);
       } else if (ev.data instanceof Blob) {
         // Some WebSocket proxies (Render/Cloudflare) may deliver binary as Blob
-        binaryMsgCount++;
         const arrayBuf = await ev.data.arrayBuffer();
+        const maybeJson = tryParseJsonBinary(arrayBuf);
+        if (maybeJson !== null) {
+          textMsgCount++;
+          console.log(`[voiceClient] 📨 blob-JSON #${textMsgCount}: type=${maybeJson.type}`, maybeJson);
+          if ((maybeJson as any).type === "ping") return;
+          if (maybeJson.type === "interrupt") this.flushPlayback();
+          this.opts.onEvent(maybeJson);
+          return;
+        }
+        binaryMsgCount++;
         if (binaryMsgCount <= 3 || binaryMsgCount % 50 === 0) {
           console.log(`[voiceClient] 🔈 audio chunk #${binaryMsgCount} (Blob→ArrayBuffer): ${arrayBuf.byteLength} bytes, playbackCtx.state=${this.playbackCtx?.state}`);
         }
@@ -332,6 +352,20 @@ class PCMDownsampler extends AudioWorkletProcessor {
 }
 registerProcessor("pcm-downsampler", PCMDownsampler);
 `;
+
+function tryParseJsonBinary(buf: ArrayBuffer): VoiceEvent | null {
+  // Pipecat 1.x sends JSON control frames as binary WebSocket frames.
+  // JSON always starts with '{' (0x7B). Audio PCM16 starts with raw sample bytes
+  // that virtually never start with 0x7B 0x22 ({"...). Check the first byte fast.
+  const view = new Uint8Array(buf);
+  if (view.length === 0 || view[0] !== 0x7b) return null; // not '{'
+  try {
+    const text = new TextDecoder().decode(buf);
+    return JSON.parse(text) as VoiceEvent;
+  } catch {
+    return null;
+  }
+}
 
 let _workletURL: string | null = null;
 function workletURL(): string {

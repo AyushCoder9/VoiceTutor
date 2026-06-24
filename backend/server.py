@@ -10,14 +10,13 @@ Exposes:
 
 from __future__ import annotations
 
+import asyncio
+import json
 import os
 from contextlib import asynccontextmanager
 from typing import Any
 
 from dotenv import load_dotenv
-import asyncio
-import json
-
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -174,7 +173,7 @@ async def session_recovery(user_id: str | None = None) -> dict[str, Any]:
     }
 
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 async def health() -> dict[str, Any]:
     """Detailed health probe — checks each external dependency is reachable.
     Used by ops / dashboards. Lightweight."""
