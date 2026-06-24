@@ -316,6 +316,34 @@ class LanguageTutorBot:
 
         transcript_forwarder = TranscriptForwarder()
 
+        # ---- EventForwarder (converts pipeline frames → OutputTransportMessageFrame) ----
+        # Pipecat 1.3.x only sends OutputTransportMessageFrame, OutputAudioRawFrame,
+        # and InterruptionFrame through the serializer to the client. All other frames
+        # (BotStartedSpeaking, LLMTextFrame, etc.) are silently dropped at the transport.
+        # This processor wraps them so the client receives every event it needs.
+        class EventForwarder(FrameProcessor):
+            async def process_frame(self, frame: Frame, direction: FrameDirection) -> None:
+                await super().process_frame(frame, direction)
+                if direction != FrameDirection.DOWNSTREAM:
+                    await self.push_frame(frame, direction)
+                    return
+                msg: dict | None = None
+                if isinstance(frame, BotStartedSpeakingFrame):
+                    msg = {"type": "bot_speaking", "speaking": True}
+                elif isinstance(frame, BotStoppedSpeakingFrame):
+                    msg = {"type": "bot_speaking", "speaking": False}
+                elif isinstance(frame, UserStartedSpeakingFrame):
+                    msg = {"type": "user_speaking", "speaking": True}
+                elif isinstance(frame, UserStoppedSpeakingFrame):
+                    msg = {"type": "user_speaking", "speaking": False}
+                elif isinstance(frame, LLMTextFrame) and frame.text:
+                    msg = {"type": "transcript", "role": "assistant", "interim": True, "text": frame.text}
+                if msg:
+                    await self.push_frame(OutputTransportMessageFrame(message=msg), FrameDirection.DOWNSTREAM)
+                await self.push_frame(frame, direction)
+
+        event_forwarder = EventForwarder()
+
         # ---- IntentRouter (deterministic FSM transitions) ------------------
         # Listens to user transcripts and triggers mode transitions / tool
         # calls in Python — no LLM function calling required. Cleaner than
@@ -856,6 +884,7 @@ class LanguageTutorBot:
             user_aggregator,
             llm,
             tts,
+            event_forwarder,
             transport.output(),
             assistant_aggregator,
         ])
